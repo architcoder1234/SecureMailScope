@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SecureMailScope Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root { color-scheme: dark; }
+  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; background:#0b0d12; color:#e6e6e6; margin:0; padding:2rem; }
+  h1 { color:#7dd3fc; }
+  .upload-box { border:2px dashed #334155; border-radius:12px; padding:2rem; text-align:center; margin-bottom:2rem; }
+  button { background:#2563eb; color:white; border:none; padding:0.6rem 1.2rem; border-radius:8px; cursor:pointer; font-size:1rem; }
+  button:hover { background:#1d4ed8; }
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-bottom:2rem; }
+  .card { background:#11151c; border:1px solid #262b36; border-radius:10px; padding:1rem; }
+  .session { border:1px solid #262b36; border-radius:10px; padding:1rem; margin-bottom:1rem; background:#11151c; }
+  .badge { padding:0.3rem 0.7rem; border-radius:6px; font-weight:600; font-size:0.85rem; }
+  .CRITICAL{background:#7f1d1d;color:#fecaca;} .HIGH{background:#7c2d12;color:#fed7aa;}
+  .MEDIUM{background:#78350f;color:#fde68a;} .LOW{background:#14532d;color:#bbf7d0;}
+  .finding{ padding:0.3rem 0.5rem; border-radius:6px; margin:0.25rem 0; font-size:0.85rem; }
+  .links a { color:#7dd3fc; margin-right:1rem; }
+  #status { margin: 1rem 0; color:#94a3b8; }
+</style>
+</head>
+<body>
+<h1>SecureMailScope — Email TLS Security Posture</h1>
+
+<div class="upload-box">
+  <input type="file" id="pcapInput" accept=".pcap,.pcapng" />
+  <br><br>
+  <button onclick="analyze()">Analyze PCAP</button>
+  <div id="status"></div>
+</div>
+
+<div id="results" style="display:none;">
+  <div class="grid">
+    <div class="card"><canvas id="riskChart"></canvas></div>
+    <div class="card" id="statsCard"></div>
+  </div>
+  <div class="links">
+    <a href="/api/report/json" target="_blank">Export JSON</a>
+    <a href="/api/report/html" target="_blank">Export HTML</a>
+    <a href="/api/report/pdf" target="_blank">Export PDF</a>
+  </div>
+  <div id="sessions"></div>
+</div>
+
+<script>
+let chart;
+async function analyze() {
+  const input = document.getElementById('pcapInput');
+  if (!input.files.length) { alert('Choose a PCAP file first'); return; }
+  const status = document.getElementById('status');
+  status.textContent = 'Uploading and analyzing...';
+
+  const form = new FormData();
+  form.append('file', input.files[0]);
+
+  try {
+    const res = await fetch('/api/analyze', { method: 'POST', body: form });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    status.textContent = `Done — ${data.total_sessions} session(s) analyzed.`;
+    render(data);
+  } catch (e) {
+    status.textContent = 'Error: ' + e.message;
+  }
+}
+
+function render(data) {
+  document.getElementById('results').style.display = 'block';
+
+  const ctx = document.getElementById('riskChart');
+  const counts = [data.summary.critical, data.summary.high, data.summary.medium, data.summary.low];
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Critical', 'High', 'Medium', 'Low'],
+      datasets: [{ data: counts, backgroundColor: ['#7f1d1d','#7c2d12','#78350f','#14532d'] }]
+    },
+    options: { plugins: { legend: { labels: { color: '#e6e6e6' } } } }
+  });
+
+  document.getElementById('statsCard').innerHTML = `
+    <h3>Summary</h3>
+    <p>Total sessions: ${data.total_sessions}</p>
+    <p>Protocols seen: ${data.summary.protocols_seen.join(', ') || 'none'}</p>
+  `;
+
+  const sessionsEl = document.getElementById('sessions');
+  sessionsEl.innerHTML = data.sessions.map(s => `
+    <div class="session">
+      <h3>${s.protocol} — ${s.client_ip}:${s.client_port} → ${s.server_ip}:${s.server_port}
+        <span class="badge ${s.risk_label}">${s.risk_label} (${s.final_score})</span>
+      </h3>
+      <p>TLS: ${s.tls_version || 'N/A'} | Cipher: ${s.negotiated_cipher || 'N/A'} | PFS: ${s.forward_secrecy ? 'Yes' : 'No'}</p>
+      ${s.findings.map(f => `<div class="finding ${f.severity}">[${f.severity}] ${f.category}: ${f.detail}</div>`).join('')}
+    </div>
+  `).join('');
+}
+</script>
+</body>
+</html>

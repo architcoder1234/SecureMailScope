@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pcap
+samples/*.pcap
+samples/uploaded_*
+samples/*.pdf
+samples/*.html
+samples/*.json
+.system_generated/
+.gemini/
+scratch/
+extracted_chat.txt
