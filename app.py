@@ -348,6 +348,18 @@ with st.sidebar:
     selected_pcap_name = "demo_capture.pcap"
 
     SCENARIO_DESCRIPTIONS = {
+        # Standard filenames from generate_samples.py
+        "sample1_smtp_plaintext_auth_leak.pcap": "🚨 Plaintext SMTP (Cleartext Password Leak - Port 25)",
+        "sample2_smtp_obsolete_tls10_rc4.pcap": "🔴 Insecure SMTP (TLS 1.0 + RC4 Cipher - POODLE/BEAST Risk)",
+        "sample3_imaps_expired_selfsigned_cert.pcap": "⚠️ IMAPS (Expired & Self-Signed 1024-bit RSA Cert)",
+        "sample4_smtps_hardened_tls13_pfs.pcap": "🟢 Hardened SMTPS (TLS 1.3 + AES-GCM + PFS - Grade A+)",
+        "sample5_pop3_plaintext_pass_leak.pcap": "🚨 Plaintext POP3 (Cleartext Password Extracted - Port 110)",
+        "sample6_smtp_starttls_stripping_attack.pcap": "🚨 STRIPTLS Attack (Active Downgrade & MITM Detected)",
+        "sample7_imaps_sweet32_3des_cbc.pcap": "🟠 IMAPS Traffic (3DES Cipher - SWEET32 CVE-2016-2183)",
+        "sample8_smtps_untrusted_selfsigned_1024_rsa.pcap": "⚠️ SMTPS Untrusted Self-Signed Certificate Chain",
+        "sample9_mixed_enterprise_traffic_bundle.pcap": "🏢 Mixed Enterprise SOC Telemetry (Multi-Stream Bundle)",
+        "sample10_smtps_post_quantum_hybrid_pqc.pcap": "⚛️ Quantum Safe SMTPS (ML-KEM / Kyber Hybrid PQC Ready)",
+        # Numbered aliases
         "01_smtp_modern_tls13.pcap": "🟢 Modern SMTP (TLS 1.3 + ChaCha20-Poly1305 - Grade A+)",
         "02_smtp_deprecated_tls10.pcap": "🔴 Insecure SMTP (TLS 1.0 + CBC - POODLE/BEAST Risk)",
         "03_smtp_starttls_stripping.pcap": "🚨 STRIPTLS Attack (Cleartext Credential Leak Detected)",
